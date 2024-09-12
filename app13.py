@@ -18,7 +18,7 @@ document_analysis_client = DocumentAnalysisClient(
     endpoint=FR_ENDPOINT, credential=AzureKeyCredential(FR_KEY)
 )
 
-def extract_invoice_line_items(image):
+def extract_invoice_line_items(image, file_name):
     # Start analysis using the prebuilt invoice model
     poller = document_analysis_client.begin_analyze_document(
         "prebuilt-invoice", document=image
@@ -30,7 +30,7 @@ def extract_invoice_line_items(image):
     for document in prebuilt_result.documents:
         if "Items" in document.fields:
             for item in document.fields["Items"].value:
-                item_dict = {}
+                item_dict = {"file_name": file_name}  # Add file name to each extracted item
                 for key, field in item.value.items():
                     if field and field.value:  # Ensure field is not None and has a value
                         item_dict[key] = field.value
@@ -38,6 +38,13 @@ def extract_invoice_line_items(image):
 
     # Convert to DataFrame
     df = pd.DataFrame(items)
+
+    # Rename columns to match the required names
+    df = df.rename(columns={"Description": "item_name", "Amount": "item_amount"})
+
+    # Keep only necessary columns
+    df = df[["file_name", "item_name", "item_amount"]]
+
     return df
 
 def main():
@@ -53,6 +60,9 @@ def main():
         st.write("Extracting line items from the invoice...")
         image = uploaded_file.read()
 
+        # Get file name from the uploaded file
+        file_name = uploaded_file.name
+
         # Display the image and the extracted table side by side
         col1, col2 = st.columns(2)
 
@@ -62,7 +72,7 @@ def main():
 
         with col2:
             # Extract and display invoice line items in the second column
-            df = extract_invoice_line_items(image)
+            df = extract_invoice_line_items(image, file_name)
             st.dataframe(df)
 
 if __name__ == "__main__":
