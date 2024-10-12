@@ -31,3 +31,17 @@ def full_invoice_extractor():
         type=["jpeg", "jpg", "png", "pdf"],
         accept_multiple_files=True,
     )
+    if uploaded_files:
+        for uploaded_file in uploaded_files:
+            # Create two columns for layout
+            col1, col2 = st.columns(2)
+            file_name = uploaded_file.name
+            file_type = uploaded_file.type
+
+            with col1:
+                if file_type == "application/pdf":
+                    # Display the PDF in the Streamlit app
+                        display_pdf(uploaded_file, width=500, height=600)
+                else:
+                    # Display the uploaded image
+                    st.image(uploaded_file, caption=file_name)
