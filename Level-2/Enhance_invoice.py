@@ -269,3 +269,19 @@ def main():
             # Accumulate data into the list
             if llm_df is not None:
                 all_data.append(llm_df)
+                
+        if all_data:
+            combined_df = pd.concat(all_data, ignore_index=True)
+
+            # Display the combined DataFrame in the second column or full width if more than one file
+            if len(uploaded_files) > 1:
+                st.write("### Combined Extracted Data")
+                st.dataframe(combined_df)
+            else:
+                col2.dataframe(combined_df)
+
+        # Success message after processing all files
+        st.success("Extraction completed successfully.")
+
+if __name__ == "__main__":
+    main()
