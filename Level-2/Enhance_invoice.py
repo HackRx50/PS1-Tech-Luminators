@@ -108,3 +108,82 @@ def call_azure_openai(document_text, api_version: str, azure_endpoint: str, azur
     # Convert to DataFrame
     df = pd.DataFrame(items)
     return df
+
+def display_pdf(file, width=500, height=600):
+    # Encode the PDF to base64
+    base64_pdf = base64.b64encode(file.getvalue()).decode('utf-8')
+    # Display the PDF in an iframe
+    pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="{width}" height="{height}" type="application/pdf"></iframe>'
+    st.markdown(pdf_display, unsafe_allow_html=True)
+
+def main():
+    # Set the page config for a custom layout
+    st.set_page_config(page_title="Invoice Item Extractor", layout="wide")
+
+    st.markdown("""
+        <style>
+        /* General style */
+        .main {
+            background-color: #1f1f1f;
+            color: #e0e0e0;
+            font-family: 'Roboto', sans-serif;
+        }
+        .header {
+            text-align: center;
+            padding: 20px;
+            color: #00aaff;
+        }
+        h1 {
+            font-weight: 600;
+            font-size: 36px;
+        }
+
+        /* Styling checkboxes in a single row */
+        .stCheckbox > div {
+            display: inline-block;
+            margin-right: 15px;
+        }
+
+        /* Customize buttons */
+        button {
+            background-color: #00aaff !important;
+            color: black !important;
+            border-radius: 5px !important;
+        }
+
+        /* Customize the data frame */
+        .stDataFrame { 
+            background-color: #2b2b2b; 
+            color: #e0e0e0; 
+        }
+
+        /* Hover effect for the file uploader */
+        .stFileUploader:hover {
+            box-shadow: 0px 0px 15px rgba(0, 170, 255, 0.7);
+        }
+
+        /* Modern border */
+        .stDataFrame {
+            border: 1px solid #00aaff;
+        }
+
+        /* Align the additional field checkboxes inline */
+        .inline-checkbox {
+            display: flex;
+            justify-content: flex-start;
+            gap: 20px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Style for headings */
+        .blue-heading {
+            color: #00aaff;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Header
+    st.markdown("<div class='header'><h1>📄 Invoice Item Extractor</h1></div>", unsafe_allow_html=True)
