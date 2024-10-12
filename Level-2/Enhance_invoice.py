@@ -187,3 +187,85 @@ def main():
 
     # Header
     st.markdown("<div class='header'><h1>📄 Invoice Item Extractor</h1></div>", unsafe_allow_html=True)
+
+    uploaded_files = st.file_uploader("Upload your documents", type=["pdf", "jpeg", "jpg", "png"], accept_multiple_files=True)
+
+    if uploaded_files:
+        # Determine and display heading based on the number of uploaded files
+        if len(uploaded_files) == 1:
+            st.markdown("<div class='blue-heading'>Extracting information from a Single invoice...</div>", unsafe_allow_html=True)
+        else:
+            st.markdown("<div class='blue-heading'>Extracting information from Multiple invoices...</div>", unsafe_allow_html=True)
+
+        # Initialize a list to hold all the extracted data
+        all_data = []
+
+        # Loop through the uploaded files
+        for uploaded_file in uploaded_files:
+
+            # Process the uploaded file
+            if uploaded_file.type == "application/pdf":
+                document = uploaded_file.read()
+                document_text = extract_text_from_pdf(document)
+
+                # If only one file is uploaded, display the PDF
+                if len(uploaded_files) == 1:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        display_pdf(uploaded_file, width=500, height=600)
+
+            else:
+                # Handle image files
+                image = Image.open(uploaded_file)
+
+                # Enhance the image
+                enhanced_image = enhance_image(image)
+
+                # Convert PNG to JPG if the file is in PNG format
+                if uploaded_file.type == "image/png":
+                    jpg_bytes = BytesIO()
+                    enhanced_image.convert("RGB").save(jpg_bytes, format="JPEG")
+                    jpg_bytes.seek(0)
+                    document = jpg_bytes.read()  # Read the bytes as JPG
+                else:
+                    document = convert_image_to_pdf(enhanced_image)  # Convert other image types to PDF
+
+                document_text = extract_text_from_pdf(document)
+
+                # If only one file is uploaded, display the image
+                if len(uploaded_files) == 1:
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image(enhanced_image, caption="Enhanced Invoice", use_column_width=True)
+
+            # Analyze using custom extractor
+            result, list_of_table_df = CustomDocExtractor().analyze_document(document)
+            document_text = result.content
+
+            # Store results in session state
+            st.session_state.result = result
+            st.session_state.list_of_table_df = list_of_table_df
+            st.session_state.document_text = document_text
+
+            # Analyze using Prebuilt Model
+            poller = document_analysis_client.begin_analyze_document(
+                "prebuilt-invoice", document=document
+            )
+            prebuilt_result = poller.result()
+
+            # Store Prebuilt result in session state
+            st.session_state.prebuilt_result = prebuilt_result
+
+            # Call Azure OpenAI for LLM response
+            llm_df = call_azure_openai(
+                st.session_state.document_text,
+                AZURE_OPENAI_VERSION,
+                AZURE_OPENAI_ENDPOINT,
+                AZURE_OPENAI_DEPLOYMENT,
+                AZURE_OPENAI_API_KEY,
+                uploaded_file.name  # Pass the file name
+            )
+
+            # Accumulate data into the list
+            if llm_df is not None:
+                all_data.append(llm_df)
