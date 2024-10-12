@@ -37,3 +37,9 @@ def extract_text_from_pdf(pdf_file):
     for page in doc:
         text += page.get_text()
     return text
+
+def convert_image_to_pdf(image):
+    pdf_bytes = BytesIO() 
+    image.save(pdf_bytes, format='PDF')  
+    pdf_bytes.seek(0)  
+    return pdf_bytes.read() 
