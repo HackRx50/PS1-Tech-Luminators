@@ -79,7 +79,7 @@ def display_pdf(file, width=500, height=600):
 
 def main():
     # Set the page config for a custom layout
-    st.set_page_config(page_title="Line Item Extractor", layout="wide")
+    st.set_page_config(page_title="Invoice Line Item Extractor", layout="wide")
 
     st.markdown("""
         <style>
