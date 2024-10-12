@@ -66,7 +66,7 @@ def call_azure_openai(document_text, api_version: str, azure_endpoint: str, azur
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": prompt}],
-        temperature=0.7,
+        temperature=0.0,
         response_format={"type": "json_object"}
     )
 
