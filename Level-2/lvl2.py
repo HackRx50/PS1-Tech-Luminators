@@ -27,7 +27,7 @@ FR_KEY = os.getenv('AZURE_KEY')
 
 # Initialize the Document Analysis Client
 document_analysis_client = DocumentAnalysisClient(
-    endpoint=str(FR_ENDPOINT), credential=AzureKeyCredential(str(FR_KEY))
+    endpoint=FR_ENDPOINT, credential=AzureKeyCredential(FR_KEY)
 )
 
 # Function to extract text from PDF
@@ -54,19 +54,24 @@ def call_azure_openai(document_text, api_version: str, azure_endpoint: str, azur
         azure_deployment=azure_deployment,
     )
     prompt = f"""
-        "Extract the following fields from the provided text in JSON format:
-        - item_description
-        - item_amount (total amount for all quantity)
-        - item_subcategory (to which category item belongs if only present for all the items, else NA)
-        - item-subcategory-total (subtotal which is present for every sub-category in the invoice, else NA)
-        Keep the order as it is in the invoice and do not ignore duplicate values if present"
+Extract the following fields from the provided text in JSON format:
+1. item_description: The name of the item.
+2. item_amount: The total amount for the item, including quantity.
+3. item_subcategory: The main category to which the item belongs. If not specified, print it as "None".
+4. item_subcategory_total: The total amount for item_subcategory. Totel in the middle of the table is also considered as item_subcategory_total. If not available, print it as "None". 
+
+Instructions:
+- Maintain the order of items as they appear in the invoice.
+- Do not ignore duplicate items; include them as they appear.
+- If an amount is missing after an item name, treat the item name as a category.
+- Ensure each item and its details are properly structured in the JSON output.
         Text: {document_text}
     """
 
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[{"role": "system", "content": prompt}],
-        temperature=0.0,
+        temperature=0.7,
         response_format={"type": "json_object"}
     )
 
@@ -100,6 +105,15 @@ def display_pdf(file, width=500, height=600):
     pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="{width}" height="{height}" type="application/pdf"></iframe>'
     st.markdown(pdf_display, unsafe_allow_html=True)
 
+import pandas as pd
+
+# Function to highlight 'None' cells in red
+def highlight_none(val):
+    if val == "None":
+        color = 'background-color: red'
+    else:
+        color = ''
+    return color
 
 def main():
     # Set the page config for a custom layout
@@ -259,13 +273,15 @@ def main():
         if all_data:
             combined_df = pd.concat(all_data, ignore_index=True)
 
-            # Display the combined DataFrame in the second column or full width if more than one file
+            # Apply conditional styling to highlight 'None' cells
+            styled_df = combined_df.style.applymap(highlight_none)
+
+            # Display the combined DataFrame with styling in the second column or full width if more than one file
             if len(uploaded_files) > 1:
                 st.write("### Combined Extracted Data")
-                st.dataframe(combined_df)
+                st.dataframe(styled_df)
             else:
-                
-                col2.dataframe(combined_df)
+                col2.dataframe(styled_df)
 
         # Success message after processing all files
         st.success("Extraction completed successfully.")
